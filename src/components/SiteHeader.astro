@@ -1,0 +1,38 @@
+---
+const { currentPath = '/' } = Astro.props;
+
+const navLinks = [
+	{ href: '/#about', label: 'About', activePrefix: '/' },
+	{ href: '/blog/', label: 'Blog', activePrefix: '/blog/' },
+	{ href: '/resume.pdf', label: 'Resume', activePrefix: '/resume' },
+];
+
+const isActive = (activePrefix: string) => {
+	if (activePrefix === '/') return currentPath === '/';
+	return currentPath.startsWith(activePrefix);
+};
+---
+
+<header class="site-header">
+	<a class="brand" href="/" aria-label="Go to homepage">
+		<span class="brand-mark">&gt;_</span>
+		<span class="brand-copy">
+			<span class="brand-name">ducdev.io.vn</span>
+			<span class="brand-prompt">4uckd3v@profile:~$</span>
+		</span>
+	</a>
+
+	<nav class="site-nav" aria-label="Primary">
+		{
+			navLinks.map((link) => (
+				<a
+					href={link.href}
+					class:list={['nav-link', { active: isActive(link.activePrefix) }]}
+					aria-current={isActive(link.activePrefix) ? 'page' : undefined}
+				>
+					{link.label}
+				</a>
+			))
+		}
+	</nav>
+</header>

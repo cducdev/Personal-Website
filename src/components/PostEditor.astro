@@ -1,0 +1,330 @@
+---
+import 'easymde/dist/easymde.min.css';
+
+import type { BlogPostStatus } from '../lib/blog';
+
+interface PostEditorValues {
+	title?: string;
+	slug?: string;
+	description?: string;
+	pubDate?: string;
+	tags?: string[];
+	status?: BlogPostStatus;
+	body?: string;
+	language?: 'en' | 'vi';
+}
+
+interface Props {
+	mode: 'new' | 'edit';
+	post?: PostEditorValues;
+}
+
+const { mode, post } = Astro.props;
+const today = new Date().toISOString().slice(0, 10);
+const initialTags = (post?.tags ?? []).filter((tag) => tag !== 'en' && tag !== 'vi');
+const initialLanguage = post?.language ?? (post?.tags?.includes('en') ? 'en' : 'vi');
+const initialStatus = post?.status ?? 'draft';
+const submitLabel = mode === 'new' ? 'Create post' : 'Save changes';
+const helpTitle = mode === 'new' ? 'Create' : 'Edit';
+const introSteps =
+	mode === 'new'
+		? [
+				'Start with the title so the slug is ready before uploading images.',
+				'Use the image button in the toolbar to upload and insert links automatically.',
+				'Save once, then the page will move you to the dedicated edit route.',
+			]
+		: [
+				'Edit one post here without mixing it with list or create actions.',
+				'You can change status, tags, content, or slug from this page.',
+				'If the slug changes, the editor will reopen on the new edit route.',
+			];
+---
+
+<section class="write-layout">
+	<form id="writer-form" class="write-form panel" data-post-editor data-mode={mode}>
+		<input id="post-original-slug" name="originalSlug" type="hidden" value={post?.slug ?? ''} />
+
+		<div class="write-meta-grid">
+			<label class="write-field">
+				<span>Title</span>
+				<input id="post-title" name="title" type="text" value={post?.title ?? ''} required />
+			</label>
+
+			<label class="write-field">
+				<span>Slug</span>
+				<input id="post-slug" name="slug" type="text" value={post?.slug ?? ''} required />
+			</label>
+
+			<label class="write-field write-field-full">
+				<span>Description</span>
+				<input
+					id="post-description"
+					name="description"
+					type="text"
+					value={post?.description ?? ''}
+					required
+				/>
+			</label>
+
+			<label class="write-field">
+				<span>Date</span>
+				<input id="post-date" name="pubDate" type="date" value={post?.pubDate ?? today} required />
+			</label>
+
+			<label class="write-field">
+				<span>Language</span>
+				<select id="post-language" name="language">
+					<option value="vi" selected={initialLanguage === 'vi'}>Vietnamese (vi)</option>
+					<option value="en" selected={initialLanguage === 'en'}>English (en)</option>
+				</select>
+			</label>
+
+			<label class="write-field">
+				<span>Status</span>
+				<select id="post-status" name="status">
+					<option value="draft" selected={initialStatus === 'draft'}>Draft</option>
+					<option value="hidden" selected={initialStatus === 'hidden'}>Hidden</option>
+					<option value="published" selected={initialStatus === 'published'}>Published</option>
+				</select>
+			</label>
+
+			<label class="write-field">
+				<span>Tags</span>
+				<input
+					id="post-tags"
+					name="tags"
+					type="text"
+					value={initialTags.join(', ')}
+					placeholder="web, pentest, security"
+				/>
+			</label>
+		</div>
+
+		<div class="write-editor-wrap">
+			<textarea id="writer-markdown" name="body">{post?.body ?? '## Introduction\n\nWrite here.\n'}</textarea>
+		</div>
+
+		<div class="write-actions">
+			<button class="write-submit" type="submit">{submitLabel}</button>
+			<p id="writer-status" class="write-status" role="status" aria-live="polite"></p>
+		</div>
+	</form>
+
+	<aside class="panel write-help">
+		<p class="section-label">{helpTitle}</p>
+		<ul class="signal-list">
+			{
+				introSteps.map((step, index) => (
+					<li>
+						<span>{index + 1}</span>
+						<strong>{step}</strong>
+					</li>
+				))
+			}
+		</ul>
+	</aside>
+</section>
+
+<script>
+	import EasyMDE from 'easymde';
+
+	const form = document.querySelector('[data-post-editor]');
+
+	if (form instanceof HTMLFormElement) {
+		const mode = form.dataset.mode ?? 'new';
+		const titleInput = form.querySelector('#post-title');
+		const slugInput = form.querySelector('#post-slug');
+		const originalSlugInput = form.querySelector('#post-original-slug');
+		const descriptionInput = form.querySelector('#post-description');
+		const dateInput = form.querySelector('#post-date');
+		const languageInput = form.querySelector('#post-language');
+		const statusInput = form.querySelector('#post-status');
+		const tagsInput = form.querySelector('#post-tags');
+		const statusNode = form.querySelector('#writer-status');
+		const textarea = form.querySelector('#writer-markdown');
+
+		const slugify = (value) =>
+			value
+				.normalize('NFD')
+				.replace(/\p{Diacritic}/gu, '')
+				.replace(/đ/g, 'd')
+				.replace(/Đ/g, 'D')
+				.toLowerCase()
+				.replace(/[^a-z0-9]+/g, '-')
+				.replace(/^-+|-+$/g, '')
+				.replace(/-{2,}/g, '-');
+
+		let slugTouched =
+			originalSlugInput instanceof HTMLInputElement && originalSlugInput.value.trim().length > 0;
+
+		const setStatus = (message, type = 'info') => {
+			if (!(statusNode instanceof HTMLElement)) {
+				return;
+			}
+
+			statusNode.textContent = message;
+			statusNode.dataset.state = type;
+		};
+
+		if (titleInput instanceof HTMLInputElement && slugInput instanceof HTMLInputElement) {
+			titleInput.addEventListener('input', () => {
+				if (!slugTouched) {
+					slugInput.value = slugify(titleInput.value);
+				}
+			});
+
+			slugInput.addEventListener('input', () => {
+				slugTouched = slugInput.value.trim().length > 0;
+				slugInput.value = slugify(slugInput.value);
+			});
+		}
+
+		if (textarea instanceof HTMLTextAreaElement) {
+			const editor = new EasyMDE({
+				autoDownloadFontAwesome: true,
+				autosave: {
+					enabled: true,
+					uniqueId: `ducdev-${mode}-post`,
+					delay: 1200,
+					text: 'Autosaved: ',
+				},
+				element: textarea,
+				forceSync: true,
+				hideIcons: ['guide', 'image'],
+				imageAccept: 'image/png, image/jpeg, image/webp, image/gif, image/avif',
+				imagePathAbsolute: true,
+				imageUploadFunction: async (file, onSuccess, onError) => {
+					try {
+						if (!(titleInput instanceof HTMLInputElement) || !(slugInput instanceof HTMLInputElement)) {
+							onError('Editor is not ready.');
+							return;
+						}
+
+						const currentSlug = slugInput.value.trim() || slugify(titleInput.value);
+
+						if (!currentSlug) {
+							onError('Set a title or slug before uploading images.');
+							return;
+						}
+
+						slugInput.value = currentSlug;
+						setStatus(`Uploading ${file.name}...`);
+
+						const uploadData = new FormData();
+						uploadData.append('slug', currentSlug);
+						uploadData.append('image', file);
+
+						const response = await fetch('/api/write/image', {
+							method: 'POST',
+							body: uploadData,
+						});
+						const result = await response.json();
+
+						if (!response.ok || !result.ok) {
+							onError(result.error ?? 'Upload failed.');
+							setStatus(result.error ?? 'Upload failed.', 'error');
+							return;
+						}
+
+						onSuccess(result.url);
+						setStatus(`Uploaded ${result.fileName}.`, 'success');
+					} catch (error) {
+						const message = error instanceof Error ? error.message : 'Upload failed.';
+						onError(message);
+						setStatus(message, 'error');
+					}
+				},
+				initialValue: textarea.value,
+				minHeight: '620px',
+				placeholder: 'Write your post in Markdown...',
+				sideBySideFullscreen: false,
+				spellChecker: false,
+				toolbar: [
+					'bold',
+					'italic',
+					'heading',
+					'quote',
+					'code',
+					'table',
+					'unordered-list',
+					'ordered-list',
+					'link',
+					'upload-image',
+					'preview',
+					'side-by-side',
+					'fullscreen',
+				],
+			});
+
+			if (!editor.isSideBySideActive()) {
+				editor.toggleSideBySide();
+			}
+
+			form.addEventListener('submit', async (event) => {
+				event.preventDefault();
+
+				if (
+					!(titleInput instanceof HTMLInputElement) ||
+					!(slugInput instanceof HTMLInputElement) ||
+					!(originalSlugInput instanceof HTMLInputElement) ||
+					!(descriptionInput instanceof HTMLInputElement) ||
+					!(dateInput instanceof HTMLInputElement) ||
+					!(languageInput instanceof HTMLSelectElement) ||
+					!(statusInput instanceof HTMLSelectElement) ||
+					!(tagsInput instanceof HTMLInputElement)
+				) {
+					return;
+				}
+
+				const slug = slugInput.value.trim() || slugify(titleInput.value);
+				slugInput.value = slug;
+
+				const payload = {
+					title: titleInput.value.trim(),
+					slug,
+					originalSlug: originalSlugInput.value.trim(),
+					description: descriptionInput.value.trim(),
+					pubDate: dateInput.value,
+					language: languageInput.value,
+					status: statusInput.value,
+					tags: tagsInput.value
+						.split(',')
+						.map((tag) => tag.trim())
+						.filter(Boolean),
+					body: editor.value(),
+				};
+
+				try {
+					setStatus(mode === 'new' ? 'Creating post...' : 'Saving changes...');
+
+					const response = await fetch('/api/write/post', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+						},
+						body: JSON.stringify(payload),
+					});
+					const result = await response.json();
+
+					if (!response.ok || !result.ok) {
+						throw new Error(result.error ?? 'Could not save post.');
+					}
+
+					originalSlugInput.value = result.slug;
+					const editUrl = `/admin/posts/${result.slug}/edit/`;
+
+					if (mode === 'new' || payload.originalSlug !== result.slug) {
+						setStatus('Saved. Redirecting to the edit page...', 'success');
+						window.location.assign(editUrl);
+						return;
+					}
+
+					const verb = result.updated ? 'Updated' : 'Saved';
+					setStatus(`${verb} ${result.slug}.`, 'success');
+				} catch (error) {
+					setStatus(error instanceof Error ? error.message : 'Could not save post.', 'error');
+				}
+			});
+		}
+	}
+</script>

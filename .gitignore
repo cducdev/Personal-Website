@@ -1,0 +1,33 @@
+# build output
+dist/
+.astro/
+
+# dependencies
+node_modules/
+
+# runtime blog data (kept on the server, not in git)
+content/blog/*
+!content/blog/.gitkeep
+storage/blog-images/*
+!storage/blog-images/.gitkeep
+
+# local artifacts
+mockups/
+.vscode/
+.idea/
+
+# logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# environment variables
+.env
+.env.local
+.env.production
+.env.*.local
+
+# macOS-specific files
+.DS_Store

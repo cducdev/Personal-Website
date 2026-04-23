@@ -1,0 +1,71 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { formatPostDate } from '../../lib/dates';
+import { listPosts } from '../../lib/blog';
+
+const posts = await listPosts();
+const showPosts = posts.length > 0;
+---
+
+<BaseLayout
+	title="Blog"
+	description="Technical posts on security, web development, and learning."
+	lang="en"
+>
+	<section class="panel hero-panel blog-intro">
+		<p class="eyebrow">4uckd3v@profile:~/blog</p>
+		<h1 class="hero-title blog-title">Blog</h1>
+		<p class="hero-copy">
+			Short posts, lab logs, walkthroughs, and technical ideas worth publishing.
+		</p>
+	</section>
+
+	<section class="section-stack">
+		<div class="section-head">
+			<p class="section-label">posts</p>
+			<p class="section-subtitle">
+				{showPosts
+					? 'All posts currently available on the blog.'
+					: 'Posts are temporarily hidden from public view.'}
+			</p>
+		</div>
+
+		{
+			showPosts ? (
+				<div class="post-preview-list post-preview-list-stacked">
+					{
+						posts.map((post) => (
+							<article class="post-preview-item post-preview-item-wide">
+								<div class="post-preview-meta">
+									<p class="eyebrow">{formatPostDate(post.pubDate)}</p>
+									<div class="pill-row pill-row-compact">
+										{post.tags.map((tag) => (
+											<span class="signal-pill">{tag}</span>
+										))}
+									</div>
+								</div>
+
+								<div class="post-preview-copy">
+									<h2>
+										<a class="post-item-link" href={`/blog/${post.slug}/`}>
+											{post.title}
+										</a>
+									</h2>
+									<p>{post.description}</p>
+								</div>
+							</article>
+						))
+					}
+				</div>
+			) : (
+				<section class="panel section-card">
+					<p class="section-label">hidden</p>
+					<h2 class="article-title">Posts are temporarily hidden</h2>
+					<p class="about-copy">
+						The archive is still here, but it is not being shown publicly right now.
+					</p>
+				</section>
+			)
+		}
+	</section>
+</BaseLayout>

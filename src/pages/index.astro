@@ -1,0 +1,182 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { formatPostDate } from '../lib/dates';
+import { listPosts } from '../lib/blog';
+
+const latestPosts = (await listPosts()).slice(0, 2);
+const showLatestPosts = latestPosts.length > 0;
+
+const focusAreas = [
+	{
+		title: 'Web Penetration Testing',
+		description: 'Built around current training at CyberJutsu Viet Nam, with practice on common web vulnerabilities, exploitation techniques, and security reporting.',
+	},
+	{
+		title: 'Generative AI',
+		description: 'Hands-on work with RAG, multi-agent systems, prompt engineering, and applied AI systems built for practical use cases.',
+	},
+	{
+		title: 'Web and Platforms',
+		description: 'Project work in web development, database-backed systems, CMS-style products, and platform maintenance such as NBKOJ.',
+	},
+	{
+		title: 'Competitive Programming',
+		description: 'Experience in algorithmic problem solving, contest environments, technical support, and problem-setting work for programming competitions.',
+	},
+];
+
+const socialLinks = [
+	{
+		title: 'GitHub',
+		href: '#',
+		label: 'github.com/cducdev',
+	},
+	{
+		title: 'LinkedIn',
+		href: '#',
+		label: 'linkedin.com/in/cducdev',
+	},
+	{
+		title: 'Facebook',
+		href: '#',
+		label: 'facebook.com/cducdev.311',
+	},
+];
+
+---
+
+<BaseLayout
+	title="Duc Dev"
+	description="Personal homepage for Duc Nguyen with experience in web development, generative AI, competitive programming, and web penetration testing."
+	lang="en"
+>
+	<section class="hero-layout">
+		<div class="panel hero-panel">
+			<p class="eyebrow">4uckd3v@profile:~$ whoami</p>
+			<h1 class="hero-title">Duc Nguyen</h1>
+			<p class="hero-copy">
+				I have hands-on experience in competitive programming, web development,
+				generative AI, and web penetration testing.
+			</p>
+			<p class="muted-copy">
+				This site is a compact profile and home for the work I care about most:
+				building on the web, exploring generative AI systems, practicing security,
+				and publishing technical posts I can revisit over time.
+			</p>
+
+			<div class="pill-row">
+				<span class="signal-pill">Web Developer</span>
+				<span class="signal-pill">Competitive Programming</span>
+				<span class="signal-pill">Generative AI</span>
+				<span class="signal-pill">Web Penetration Testing</span>
+			</div>
+		</div>
+
+		<aside class="panel profile-panel">
+			<div class="profile-photo-frame">
+				<img
+					class="profile-photo"
+					src="/profile-photo.JPG"
+					alt="Portrait of Duc Nguyen"
+					loading="eager"
+				/>
+			</div>
+
+			<div class="profile-meta">
+				<p class="section-label">connect</p>
+				<ul class="social-list">
+					{
+						socialLinks.map((item) => (
+							<li>
+								<a
+									class:list={['social-link', { 'is-placeholder': item.href === '#' }]}
+									href={item.href}
+									aria-disabled={item.href === '#' ? 'true' : undefined}
+								>
+									<span>{item.title}</span>
+									<strong>{item.label}</strong>
+								</a>
+							</li>
+						))
+					}
+				</ul>
+			</div>
+		</aside>
+	</section>
+
+	<section id="about" class="panel section-card">
+		<p class="section-label">about</p>
+		<p class="about-copy">
+			My background combines competitive programming, technical activities, and
+			independent building. I work across web platforms, AI-assisted systems, and
+			web security, and I learn best by maintaining real projects, supporting
+			contests, and documenting the process clearly enough to revisit later.
+		</p>
+	</section>
+
+	<section id="focus" class="section-stack">
+		<div class="section-head">
+			<p class="section-label">focus</p>
+			<p class="section-subtitle">The areas I am actively going deeper on right now.</p>
+		</div>
+
+		<div class="focus-grid">
+			{
+				focusAreas.map((item) => (
+					<article class="panel focus-card">
+						<h2>{item.title}</h2>
+						<p>{item.description}</p>
+					</article>
+				))
+			}
+		</div>
+	</section>
+
+	{
+		showLatestPosts ? (
+			<section class="section-stack">
+				<div class="section-head">
+					<p class="section-label">latest posts</p>
+					<p class="section-subtitle">The two most recent posts from the blog, shown here as a quick snapshot.</p>
+				</div>
+
+				<div class="latest-notes-grid">
+					{
+						latestPosts.map((post) => (
+							<article class="panel latest-note-card">
+								<div class="latest-note-meta">
+									<p class="eyebrow">{formatPostDate(post.pubDate)}</p>
+									<a class="latest-note-path" href={`/blog/${post.slug}/`}>
+										/blog/{post.slug}/
+									</a>
+								</div>
+								{
+									post.tags.length > 0 && (
+										<div class="pill-row pill-row-compact">
+											{post.tags.map((tag) => (
+												<span class="signal-pill">{tag}</span>
+											))}
+										</div>
+									)
+								}
+								<h2>
+									<a class="post-item-link latest-note-link" href={`/blog/${post.slug}/`}>
+										{post.title}
+									</a>
+								</h2>
+								<p class="latest-note-summary">{post.description}</p>
+							</article>
+						))
+					}
+				</div>
+			</section>
+		) : (
+			<section class="panel section-card">
+				<p class="section-label">blog</p>
+				<p class="about-copy">
+					Posts are temporarily hidden while I refresh the blog.
+				</p>
+			</section>
+		)
+	}
+</BaseLayout>

@@ -1,0 +1,143 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { formatPostDate } from '../../../lib/dates';
+import { applyWriteAccessToPage } from '../../../lib/write-access';
+import { blogStatusValues, listPosts, type BlogPost, type BlogPostStatus } from '../../../lib/blog';
+
+const access = applyWriteAccessToPage(Astro);
+const filterValues = ['all', ...blogStatusValues] as const;
+type FilterValue = (typeof filterValues)[number];
+const rawFilter = Astro.url.searchParams.get('status');
+const statusFilter = filterValues.includes(rawFilter as FilterValue)
+	? (rawFilter as FilterValue)
+	: 'all';
+
+const allPosts = access.authorized ? await listPosts({ includeUnpublished: true }) : [];
+const posts =
+	statusFilter === 'all' ? allPosts : allPosts.filter((post) => post.status === statusFilter);
+
+const filterLinks = filterValues.map((value) => ({
+	value,
+	label: value === 'all' ? 'All' : value.charAt(0).toUpperCase() + value.slice(1),
+	count: value === 'all' ? allPosts.length : allPosts.filter((post) => post.status === value).length,
+}));
+
+const visibleTags = (post: BlogPost) => post.tags.filter((tag) => tag !== 'en' && tag !== 'vi');
+const postLanguage = (post: BlogPost) => (post.tags.includes('en') ? 'EN' : 'VI');
+const statusLabel = (status: BlogPostStatus) =>
+	status.charAt(0).toUpperCase() + status.slice(1);
+---
+
+<BaseLayout title="Manage Posts" description="Private post management page." lang="en">
+	{
+		access.authorized ? (
+			<section class="admin-page">
+				<header class="panel write-intro">
+					<p class="eyebrow">4uckd3v@profile:~/admin/posts</p>
+					<h1 class="blog-title">Posts</h1>
+					<p class="hero-copy">
+						Review every post here, then jump to a dedicated page for creating or editing.
+					</p>
+
+					<div class="admin-toolbar">
+						<nav class="admin-filter-list" aria-label="Post filters">
+							{
+								filterLinks.map((item) => {
+									const href =
+										item.value === 'all'
+											? '/admin/posts/'
+											: `/admin/posts/?status=${item.value}`;
+
+									return (
+										<a
+											href={href}
+											class:list={[
+												'admin-filter-link',
+												{ active: statusFilter === item.value },
+											]}
+											aria-current={statusFilter === item.value ? 'page' : undefined}
+										>
+											{item.label} <span>{item.count}</span>
+										</a>
+									);
+								})
+							}
+						</nav>
+
+						<a class="write-submit admin-primary-link" href="/admin/posts/new/">
+							New post
+						</a>
+					</div>
+				</header>
+
+				<section class="panel admin-post-board">
+					{
+						posts.length > 0 ? (
+							posts.map((post) => (
+								<article class="admin-post-row">
+									<div class="admin-post-copy">
+										<div class="admin-post-top">
+											<h2>
+												<a class="post-item-link" href={`/admin/posts/${post.slug}/edit/`}>
+													{post.title}
+												</a>
+											</h2>
+											<span class="admin-status-pill" data-status={post.status}>
+												{statusLabel(post.status)}
+											</span>
+										</div>
+
+										<p class="admin-post-description">{post.description}</p>
+
+										<div class="admin-post-meta">
+											<span>{formatPostDate(post.pubDate)}</span>
+											<span>{postLanguage(post)}</span>
+											<span>/blog/{post.slug}/</span>
+										</div>
+
+										{
+											visibleTags(post).length > 0 && (
+												<div class="pill-row pill-row-compact admin-post-tags">
+													{visibleTags(post).map((tag) => (
+														<span class="signal-pill">{tag}</span>
+													))}
+												</div>
+											)
+										}
+									</div>
+
+									<div class="admin-post-actions">
+										<a class="admin-action-link" href={`/admin/posts/${post.slug}/edit/`}>
+											Edit
+										</a>
+										{
+											post.status === 'published' && (
+												<a class="admin-action-link" href={`/blog/${post.slug}/`}>
+													Open
+												</a>
+											)
+										}
+									</div>
+								</article>
+							))
+						) : (
+							<section class="admin-empty-state">
+								<p class="section-label">empty</p>
+								<h2 class="article-title">No posts in this view</h2>
+								<p class="about-copy">
+									Try another filter or create a new post from the button above.
+								</p>
+							</section>
+						)
+					}
+				</section>
+			</section>
+		) : (
+			<section class="panel section-card">
+				<p class="section-label">locked</p>
+				<h1 class="article-title">Authentication required</h1>
+				<p class="about-copy">{access.message}</p>
+			</section>
+		)
+	}
+</BaseLayout>

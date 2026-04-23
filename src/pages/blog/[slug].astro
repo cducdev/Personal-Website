@@ -1,0 +1,32 @@
+---
+import PostLayout from '../../layouts/PostLayout.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getPostBySlug } from '../../lib/blog';
+
+const slug = Astro.params.slug ?? '';
+const post = await getPostBySlug(slug);
+---
+
+{
+	post ? (
+		<PostLayout
+			title={post.title}
+			description={post.description}
+			pubDate={post.pubDate}
+			updatedDate={post.updatedDate}
+			tags={post.tags}
+		>
+			<Fragment set:html={post.html} />
+		</PostLayout>
+	) : (
+		<BaseLayout title="Not Found" description="Requested blog post was not found." lang="en">
+			<section class="panel section-card">
+				<p class="section-label">hidden</p>
+				<h1 class="article-title">Post not available</h1>
+				<p class="about-copy">
+					The post you opened does not exist, is still in draft, or is currently hidden.
+				</p>
+			</section>
+		</BaseLayout>
+	)
+}

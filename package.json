@@ -1,0 +1,23 @@
+{
+  "name": "ducdev-io-vn",
+  "type": "module",
+  "version": "0.0.1",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "start": "node ./dist/server/entry.mjs",
+    "astro": "astro",
+    "new:post": "node ./scripts/new-post.mjs"
+  },
+  "dependencies": {
+    "@astrojs/node": "^10.0.6",
+    "astro": "^6.1.9",
+    "easymde": "^2.20.0",
+    "gray-matter": "^4.0.3",
+    "markdown-it": "^14.1.1"
+  }
+}

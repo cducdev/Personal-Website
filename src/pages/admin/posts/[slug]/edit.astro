@@ -1,0 +1,83 @@
+---
+import PostEditor from '../../../../components/PostEditor.astro';
+import BaseLayout from '../../../../layouts/BaseLayout.astro';
+import { getPostBySlug } from '../../../../lib/blog';
+import { applyWriteAccessToPage } from '../../../../lib/write-access';
+
+const access = applyWriteAccessToPage(Astro);
+const slug = Astro.params.slug ?? '';
+let post = null;
+
+if (access.authorized && slug) {
+	try {
+		post = await getPostBySlug(slug, { includeUnpublished: true });
+	} catch {
+		post = null;
+	}
+}
+
+const editorPost = post
+	? {
+			title: post.title,
+			slug: post.slug,
+			description: post.description,
+			pubDate: post.pubDate.toISOString().slice(0, 10),
+			tags: post.tags,
+			status: post.status,
+			body: post.body,
+			language: post.tags.includes('en') ? 'en' : 'vi',
+		}
+	: undefined;
+---
+
+<BaseLayout title="Edit Post" description="Private page for editing a blog post." lang="en">
+	{
+		access.authorized ? (
+			post ? (
+				<section class="write-page">
+					<header class="panel write-intro">
+						<p class="eyebrow">4uckd3v@profile:~/admin/posts/{post.slug}</p>
+						<h1 class="blog-title">Edit Post</h1>
+						<p class="hero-copy">
+							Update this post here without mixing list and create actions into the same page.
+						</p>
+
+						<div class="admin-toolbar">
+							<div class="pill-row pill-row-compact">
+								<span class="admin-status-pill" data-status={post.status}>{post.status}</span>
+							</div>
+
+							<div class="admin-inline-links">
+								<a class="back-link" href="/admin/posts/">All posts</a>
+								{
+									post.status === 'published' && (
+										<a class="back-link" href={`/blog/${post.slug}/`}>
+											Open public page
+										</a>
+									)
+								}
+							</div>
+						</div>
+					</header>
+
+					<PostEditor mode="edit" post={editorPost} />
+				</section>
+			) : (
+				<section class="panel section-card">
+					<p class="section-label">missing</p>
+					<h1 class="article-title">Post not found</h1>
+					<p class="about-copy">
+						The post you tried to edit does not exist in the current blog.
+					</p>
+					<a class="back-link" href="/admin/posts/">Back to all posts</a>
+				</section>
+			)
+		) : (
+			<section class="panel section-card">
+				<p class="section-label">locked</p>
+				<h1 class="article-title">Authentication required</h1>
+				<p class="about-copy">{access.message}</p>
+			</section>
+		)
+	}
+</BaseLayout>

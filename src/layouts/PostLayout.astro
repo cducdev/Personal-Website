@@ -1,0 +1,46 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import { formatPostDate } from '../lib/dates';
+
+interface Props {
+	title: string;
+	description: string;
+	pubDate: Date;
+	updatedDate?: Date;
+	tags?: string[];
+}
+
+const { title, description, pubDate, updatedDate, tags = [] } = Astro.props;
+const lang = tags.some((tag) => tag.toLowerCase() === 'en') ? 'en' : 'vi';
+---
+
+<BaseLayout title={title} description={description} lang={lang}>
+	<article class="article-shell">
+		<a class="back-link" href="/blog/">cd .. / back to blog</a>
+
+		<header class="panel article-head">
+			<p class="eyebrow">4uckd3v@profile:~/blog/{Astro.url.pathname.split('/').filter(Boolean).at(-1)}</p>
+			<h1 class="article-title">{title}</h1>
+			<p class="hero-copy article-description">{description}</p>
+
+			<div class="article-meta">
+				<span>Published {formatPostDate(pubDate)}</span>
+				{updatedDate && <span>Updated {formatPostDate(updatedDate)}</span>}
+			</div>
+
+			{
+				tags.length > 0 && (
+					<div class="pill-row">
+						{tags.map((tag) => (
+							<span class="signal-pill">{tag}</span>
+						))}
+					</div>
+				)
+			}
+		</header>
+
+		<div class="article-body">
+			<slot />
+		</div>
+	</article>
+</BaseLayout>
