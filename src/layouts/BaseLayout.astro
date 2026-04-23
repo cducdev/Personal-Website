@@ -17,6 +17,7 @@ const {
 
 const pageTitle = title === 'Duc Dev' ? title : `${title} | Duc Dev`;
 const currentPath = Astro.url.pathname;
+const faviconVersion = 'shell-1';
 ---
 
 <!doctype html>
@@ -26,8 +27,8 @@ const currentPath = Astro.url.pathname;
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="generator" content={Astro.generator} />
 		<meta name="description" content={description} />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
+		<link rel="icon" type="image/svg+xml" href={`/favicon.svg?v=${faviconVersion}`} />
+		<link rel="icon" type="image/png" sizes="32x32" href={`/favicon.png?v=${faviconVersion}`} />
 		<title>{pageTitle}</title>
 	</head>
 	<body>
